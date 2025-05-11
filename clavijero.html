@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro De Control De Transporte</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <!-- Estilos personalizados -->
+    <style>
+        :root {
+            --sidebar-width: 280px;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow-x: hidden;
+            background-color: #f8f9fa;
+        }
+        
+        /* Sidebar personalizado */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+            color: white;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-menu {
+            padding: 1rem 0;
+        }
+        
+        .sidebar-menu .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1.5rem;
+            margin: 0.25rem 0;
+            border-left: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .sidebar-menu .nav-link:hover,
+        .sidebar-menu .nav-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid #3498db;
+        }
+        
+        .sidebar-menu .nav-link i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        /* Contenido principal */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        /* Tarjetas personalizadas */
+        .stat-card {
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s;
+            border: none;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stat-card .icon-container {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        /* Colores para las tarjetas */
+        .card-vehicles {
+            border-left: 4px solid #3498db;
+        }
+        
+        .card-passengers {
+            border-left: 4px solid #2ecc71;
+        }
+        
+        .card-ontime {
+            border-left: 4px solid #f39c12;
+        }
+        
+        .card-incidents {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        /* Mapa */
+        #live-map {
+            height: 400px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        /* Alertas */
+        .alert-item {
+            border-left: 4px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .alert-item.critical {
+            border-left-color: #e74c3c;
+        }
+        
+        .alert-item.warning {
+            border-left-color: #f39c12;
+        }
+        
+        .alert-item.info {
+            border-left-color: #3498db;
+        }
+        
+        /* Responsivo */
+        @media (max-width: 992px) {
+            .sidebar {
+                margin-left: -280px;
+            }
+            
+            .sidebar.active {
+                margin-left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .sidebar-collapse {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <a class="navbar-brand" href="#">
+                    <img src="img/logo-transporte.png" alt="Logo" height="40" class="d-inline-block align-top me-2">
+                    Centro de Control
+                </a>
+            </div>
+            <button class="btn btn-link text-white d-lg-none sidebar-collapse">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard.html">
+                        <i class="bi bi-speedometer2"></i>
+                        Inicio
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="mapa.html">
+                        <i class="bi bi-map"></i>
+                        Mapa en Tiempo Real
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="clavijero.html">
+                        <i class="bi bi-calendar-check"></i>
+                        Clavijero
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="reportes.html">
+                        <i class="bi bi-clipboard-data"></i>
+                        Reportes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="pasajeros.html">
+                        <i class="bi bi-people"></i>
+                        Pasajeros
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-gear"></i>
+                        Configuración
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="main-content">
+        <!-- Barra Superior -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <button class="btn btn-primary d-lg-none sidebar-collapse">
+                <i class="bi bi-list"></i>
+            </button>
+            
+            <h2 class="mb-0">Inicio</h2>
+            
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle me-1"></i>
+                    Administrador
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Perfil</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Configuración</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Estadísticas Rápidas -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card card-vehicles shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted text-uppercase small">Vehículos Activos</h6>
+                                <h3 class="mb-0">42</h3>
+                                <small class="text-success"><i class="bi bi-arrow-up"></i> 5.2% vs ayer</small>
+                            </div>
+                            <div class="icon-container bg-primary bg-opacity-10 text-primary">
+                                <i class="bi bi-bus-front"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card card-passengers shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted text-uppercase small">Pasajeros Hoy</h6>
+                                <h3 class="mb-0">1,248</h3>
+                                <small class="text-success"><i class="bi bi-arrow-up"></i> 12.7% vs ayer</small>
+                            </div>
+                            <div class="icon-container bg-success bg-opacity-10 text-success">
+                                <i class="bi bi-people"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card card-ontime shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted text-uppercase small">Rutas en Tiempo</h6>
+                                <h3 class="mb-0">85%</h3>
+                                <small class="text-danger"><i class="bi bi-arrow-down"></i> 2.3% vs ayer</small>
+                            </div>
+                            <div class="icon-container bg-warning bg-opacity-10 text-warning">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card card-incidents shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted text-uppercase small">Incidencias</h6>
+                                <h3 class="mb-0">3</h3>
+                                <small class="text-success"><i class="bi bi-arrow-down"></i> 40% vs ayer</small>
+                            </div>
+                            <div class="icon-container bg-danger bg-opacity-10 text-danger">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mapa y Alertas -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-12">
+                <div class="card shadow-sm h-100">
+                    <div class="container mt-4">
+                        <h2 class="text-center mb-4">Clavijero de Vehículos - Transporte Urbano</h2>
+                    
+                        <!-- Controles superiores -->
+                        <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label>Hora inicial: <input type="time" value="00:00" class="form-control d-inline w-auto ms-2 me-3"></label>
+                            <label>Hora final: <input type="time" value="23:59" class="form-control d-inline w-auto ms-2"></label>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-primary">Exportar Clavijero</button>
+                            <button class="btn btn-warning">Aplicar Descanso</button>
+                            <button class="btn btn-success">Cambiar Vehículo</button>
+                        </div>
+                        </div>
+                    
+                        <!-- RUTA 1 -->
+                        <div class="bg-franja p-3 mb-4 rounded">
+                        <h5 class="mb-3">Ruta: RUTA 1 </h5>
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                    
+                            <!-- Vehículo -->
+                            <div class="col">
+                            <div class="card vehiculo-card p-3">
+                                <h6>Bus #446</h6>
+                                <p class="hora-box">Hora salida: 05:40</p>
+                                <p class="asignacion-id text-success">Asignado</p>
+                            </div>
+                            </div>
+                    
+                            <div class="col">
+                            <div class="card vehiculo-card p-3">
+                                <h6>Bus #414</h6>
+                                <p class="hora-box">Hora salida: 05:50</p>
+                                <p class="asignacion-id text-success">Asignado</p>
+                            </div>
+                            </div>
+                    
+                            <div class="col">
+                            <div class="card vehiculo-card p-3">
+                                <h6>Bus #185</h6>
+                                <p class="hora-box">Hora salida: 06:00</p>
+                                <p class="asignacion-id text-success">Asignado</p>
+                            </div>
+                            </div>
+                    
+                            <!-- Puedes agregar más buses fácilmente duplicando este bloque -->
+                    
+                        </div>
+                        </div>
+                    
+                        <!-- RUTA 2 -->
+                        <div class="bg-franja p-3 mb-4 rounded">
+                        <h5 class="mb-3">Ruta: RUTA 2</h5>
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                    
+                            <div class="col">
+                            <div class="card vehiculo-card p-3">
+                                <h6>Bus #200</h6>
+                                <p class="hora-box">Hora salida: 05:45</p>
+                                <p class="asignacion-id text-success">Asignado</p>
+                            </div>
+                            </div>
+                    
+                            <div class="col">
+                            <div class="card vehiculo-card p-3">
+                                <h6>Bus #328</h6>
+                                <p class="hora-box">Hora salida: 05:49</p>
+                                <p class="asignacion-id text-success">Asignado</p>
+                            </div>
+                            </div>
+                    
+                            <div class="col">
+                            <div class="card vehiculo-card p-3">
+                                <h6>Bus #413</h6>
+                                <p class="hora-box">Hora salida: 06:25</p>
+                                <p class="asignacion-id text-success">Asignado</p>
+                            </div>
+                            </div>
+                    
+                        </div>
+                        </div>
+                    
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- Bootstrap JS Bundle con Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="js/mapa.js"></script>
+    <!-- Script para el sidebar -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarCollapseButtons = document.querySelectorAll('.sidebar-collapse');
+            
+            sidebarCollapseButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelector('.sidebar').classList.toggle('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
